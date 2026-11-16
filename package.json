@@ -1,0 +1,25 @@
+{
+  "name": "cours-du-soir",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@livekit/components-react": "^2.9.14",
+    "@livekit/components-styles": "^1.2.0",
+    "@supabase/supabase-js": "~2.57.0",
+    "livekit-client": "^2.15.6",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "tus-js-client": "^4.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "supabase": "^3.1.0",
+    "vite": "^6.3.5"
+  }
+}
