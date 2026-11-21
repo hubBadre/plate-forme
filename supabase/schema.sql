@@ -96,6 +96,19 @@ create table public.instagram_courses (
   added_by uuid not null references public.profiles(id),
   created_at timestamptz not null default now()
 );
+create table public.facebook_courses (
+  id uuid primary key default gen_random_uuid(),
+  title text not null check (char_length(title) between 1 and 140),
+  url text not null check (url ~* '^https?://([a-z0-9-]+\.)*(facebook\.com|fb\.watch|fb\.me)(/|$)'),
+  description text not null default '',
+  level public.school_level not null,
+  subject public.school_subject not null,
+  chapter text not null default '',
+  class_id uuid references public.classes(id) on delete set null,
+  published boolean not null default false,
+  added_by uuid not null references public.profiles(id),
+  created_at timestamptz not null default now()
+);
 
 create or replace function public.validate_class_level()
 returns trigger language plpgsql set search_path = '' as $$
@@ -112,6 +125,7 @@ create trigger live_class_level before insert or update of class_id, level on pu
 create trigger replay_class_level before insert or update of class_id, level on public.replays for each row execute procedure public.validate_class_level();
 create trigger resource_class_level before insert or update of class_id, level on public.resources for each row execute procedure public.validate_class_level();
 create trigger instagram_course_class_level before insert or update of class_id, level on public.instagram_courses for each row execute procedure public.validate_class_level();
+create trigger facebook_course_class_level before insert or update of class_id, level on public.facebook_courses for each row execute procedure public.validate_class_level();
 
 create or replace function public.validate_student_class_level()
 returns trigger language plpgsql set search_path = '' as $$
@@ -161,6 +175,7 @@ alter table public.live_sessions enable row level security;
 alter table public.replays enable row level security;
 alter table public.resources enable row level security;
 alter table public.instagram_courses enable row level security;
+alter table public.facebook_courses enable row level security;
 
 create policy "profiles read own or staff" on public.profiles for select to authenticated using (id = (select auth.uid()) or public.has_staff_role());
 -- Only basic profile fields are client-updatable. Account approval/status and
@@ -205,6 +220,10 @@ create policy "approved users see published Instagram courses" on public.instagr
   public.is_approved_user() and (public.has_staff_role() or (published and (class_id is null or public.is_class_member(class_id))))
 );
 create policy "staff manage Instagram courses" on public.instagram_courses for all to authenticated using (public.has_staff_role()) with check (public.has_staff_role());
+create policy "approved users see published Facebook courses" on public.facebook_courses for select to authenticated using (
+  public.is_approved_user() and (public.has_staff_role() or (published and (class_id is null or public.is_class_member(class_id))))
+);
+create policy "staff manage Facebook courses" on public.facebook_courses for all to authenticated using (public.has_staff_role()) with check (public.has_staff_role());
 
 -- Private storage: store opaque object paths in rows and issue short-lived signed URLs only after RLS checks.
 insert into storage.buckets(id, name, public, file_size_limit, allowed_mime_types)
@@ -226,3 +245,4 @@ revoke update on public.profiles from authenticated;
 grant select on public.profiles to authenticated;
 grant select, insert, update, delete on public.classes, public.class_members, public.live_sessions, public.replays, public.resources to authenticated;
 grant select, insert, update, delete on public.instagram_courses to authenticated;
+grant select, insert, update, delete on public.facebook_courses to authenticated;
