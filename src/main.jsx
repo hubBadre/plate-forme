@@ -2,6 +2,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getCurrentProfile, isSupabaseConfigured, supabase, uploadPrivateFile } from './lib/supabase';
 import { AdminStudents, LiveManager, ResourcesManager, StudentSchedule } from './admin';
+import InstagramCourses from './instagram-courses';
 import './styles.css';
 
 const LiveRoom = React.lazy(() => import('./live-room.jsx'));
@@ -131,9 +132,11 @@ function App() {
     if (recording) await loadCatalog();
   }
 
-  const studentNav = [['dashboard', 'Vue d’ensemble', 'grid'], ['replays', 'Anciens LIVE', 'play'], ['schedule', 'Planning', 'calendar'], ['resources', 'Ressources', 'file']];
-  const teacherNav = [['dashboard', 'Vue d’ensemble', 'grid'], ['students', 'Mes élèves', 'users'], ['live', 'LIVE & planning', 'calendar'], ['replays', 'Anciens LIVE', 'play'], ['resources', 'Ressources', 'file']];
+  const studentNav = [['dashboard', 'Vue d’ensemble', 'grid'], ['replays', 'Anciens LIVE', 'play'], ['instagram', 'Cours Instagram', 'play'], ['schedule', 'Planning', 'calendar'], ['resources', 'Ressources', 'file']];
+  const teacherNav = [['dashboard', 'Vue d’ensemble', 'grid'], ['students', 'Mes élèves', 'users'], ['live', 'LIVE & planning', 'calendar'], ['replays', 'Anciens LIVE', 'play'], ['instagram', 'Cours Instagram', 'play'], ['resources', 'Ressources', 'file']];
   const nav = role === 'teacher' || role === 'admin' ? teacherNav : studentNav;
+  studentNav.splice(2, 0, ['instagram', 'Cours Instagram', 'play']);
+  teacherNav.splice(4, 0, ['instagram', 'Cours Instagram', 'play']);
   const sourceLessons = profile ? (catalog||[]).map((item) => ({ ...item, topic: item.title, length: item.duration_seconds ? `${Math.round(item.duration_seconds / 60)} min` : 'Replay', initials: item.subject.slice(0, 2).toUpperCase(), color: item.subject === 'Mathématiques' ? 'violet' : item.subject === 'Physique' ? 'blue' : 'orange' })) : lessons;
   const shownLessons = sourceLessons.filter((item) => (filter.level === 'Tous les niveaux' || item.level === filter.level) && (filter.subject === 'Toutes les matières' || item.subject === filter.subject) && (filter.chapter === 'Tous les chapitres' || item.chapter === filter.chapter) && `${item.topic} ${item.chapter} ${item.subject}`.toLowerCase().includes(query.toLowerCase()));
 
@@ -154,6 +157,7 @@ function App() {
         {page === 'resources' && (profile?<ResourcesManager profile={profile} role={role} setMessage={setMessage}/>:<section><PageTitle eyebrow="VOTRE MATÉRIEL" title="Ressources" description="Documents, exercices et corrections partagés par votre professeur."/><div className="resource-placeholder"><div className="resource-orb"><Icon name="file" size={26}/></div><h3>Vos ressources de cours</h3><p>Connectez-vous avec votre compte validé pour consulter les documents privés.</p><button className="button secondary" onClick={()=>setAuthOpen(true)}>Se connecter <Icon name="arrow" size={16}/></button></div></section>)}
         {page === 'students' && <AdminStudents setMessage={setMessage}/>}
         {page === 'live' && <LiveManager profile={profile} role={role} joinLive={joinLive} setMessage={setMessage}/>}
+        {page === 'instagram' && <InstagramCourses profile={profile} role={role} classes={classOptions} setMessage={setMessage} openAuth={() => setAuthOpen(true)}/>}
       </div>
     </main>
     {authOpen && <div className="modal-backdrop" role="presentation" onMouseDown={(e)=>e.target===e.currentTarget&&setAuthOpen(false)}><section className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="login-heading"><button className="modal-close" onClick={()=>setAuthOpen(false)} aria-label="Fermer">×</button><div className="brand-mark modal-mark">c<span>.</span></div><p className="eyebrow">VOTRE ESPACE DE COURS</p><h2 id="login-heading">Ravi de vous revoir.</h2><p className="modal-copy">Connectez-vous pour accéder à vos cours et ressources privés.</p><form onSubmit={signIn}><label>Adresse e-mail<input name="email" type="email" autoComplete="email" placeholder="vous@exemple.com" required/></label><label>Mot de passe<input name="password" type="password" autoComplete="current-password" placeholder="8 caractères minimum" required/></label><button className="button primary full" type="submit">Se connecter <Icon name="arrow" size={17}/></button></form><div className="modal-foot">Votre compte est créé et validé par votre professeur.</div>{!isSupabaseConfigured&&<div className="config-hint">Connexion en attente de la configuration Supabase.</div>}</section></div>}
